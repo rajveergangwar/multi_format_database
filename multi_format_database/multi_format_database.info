@@ -1,0 +1,4 @@
+name = Multi format database
+description = Export mysql database tables in multi format files
+package = content
+core = 7.x

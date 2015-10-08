@@ -1,0 +1,73 @@
+<?php
+function multi_format_database_menu() {
+
+  $items = array();
+
+  $items['admin/config/system/multi_format_database'] = array(
+    'title' => 'Export database in muti format',
+    'description' => 'Export database\'s tables in muti file format (xls,xlsx,doc,txt,csv)',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('multi_format_database_form'),
+    'access arguments' => array('administer onthisdate settings'),
+    'type' => MENU_NORMAL_ITEM,
+   );
+
+  return $items;
+}
+
+function multi_format_database_form() {
+    $form   =   array();
+    $form['files_formats']         = array(
+        '#title'    => t('Select Data Export Format'),
+        '#type' => 'select',
+        '#options'   => multi_format_database_get_file_format(),
+    );
+    $form['file_download_location']         = array(
+        '#title'        => t('Enter file download folder location'),
+        '#description'  => t('Enter file download folder location dont\'t include \\ in last'),
+        '#type'         => 'textfield',
+    );
+    $form['database_tables']         = array(
+        '#title'    => t('Select Tables To Export'),
+        '#type' => 'checkboxes',
+        '#options'   => multi_format_database_get_table(),
+    );
+    $form['buttons']['submit'] = array(
+        '#type' => 'submit',
+        '#value' => t('Save')
+    );
+    return $form;
+}
+
+function multi_format_database_form_submit($form, &$form_state){
+    $extension      =   $form_state['values']['files_formats'];
+    $dwnLocation    =   $form_state['values']['file_download_location'];
+    $tablesArray    =   array_filter($form_state['values']['database_tables']);
+    foreach($tablesArray    as  $table) {
+        $filename   =   $table.uniqid().'.'.$extension;
+        $query      =   "SELECT * FROM $table INTO OUTFILE '$dwnLocation/$filename' FIELDS TERMINATED BY '\t' LINES TERMINATED BY '\r\n'";
+        $result     =   db_query($query);
+    }
+}
+
+function multi_format_database_get_table() {
+    global $databases;
+    $options    =   array();
+    $dbname =   $databases['default']['default']['database'];
+    $query  =   "select TABLE_NAME from information_schema.tables where table_schema='$dbname'";
+    $result =   db_query($query)->fetchAll(PDO::FETCH_ASSOC);
+    foreach($result as $key=>$table) {
+        $options[$table['TABLE_NAME']]    =   $table['TABLE_NAME'];
+    }
+    
+    return $options;
+}
+
+function multi_format_database_get_file_format() {
+    $file               =   array();
+    $file['csv']        =   'csv';
+    $file['xls']        =   'xls';
+    $file['xlsx']       =   'xlsx';
+    $file['txt']        =   'txt';
+    return $file;
+}
